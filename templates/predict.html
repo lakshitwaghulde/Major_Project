@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predict Crop Disease</title>
+    <style>
+        body {
+            background-color: rgb(236, 248, 236); /* Dark green background */
+            color: #ffffff; /* White text color */
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: left; /* Align text to left */
+        }
+
+        #resultContainer {
+            max-width: 600px; /* Set a max width for the result container */
+            margin: 0 auto; /* Center the container horizontally */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Shadow for the entire result container */
+        }
+
+        #predictionResult {
+            background-color: #71dc71; /* Dark green container */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: rgb(124, 222, 114); /* Green heading color */
+            text-align: center;
+            text-decoration: underline;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin: 10px 0;
+            font-size: 16px;
+            text-align: left; /* Align text to left */
+        }
+
+        #predictedDisease {
+            font-weight: bold;
+            color: #ffffff; /* White text color for prediction */
+        }
+
+        #description {
+            font-style: italic;
+        }
+
+        #relatedLinks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: left;
+            margin-top: 10px;
+        }
+
+        .relatedImage {
+            width: 150px; /* Set a fixed width for related links images */
+            height: 150px; /* Set a fixed height for related links images */
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        #supplementImage {
+            max-width: 300px; /* Set a fixed max width for the supplement image */
+            height: auto;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #buyLinkContainer {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        #buyLinkContainer a {
+            color: #ffffff; /* Green link color */
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        #buyLinkContainer a:hover {
+            text-decoration: none; /* Remove underline on hover */
+        }
+
+        #possibleSteps {
+            font-weight: bold;
+            color: #ffffff; /* Green text color for possible steps */
+        }
+
+        #possibleSteps ul {
+            padding: 0;
+            margin: 0;
+        }
+
+        #possibleSteps li {
+            margin: 5px 0;
+            padding-left: 1.5em;
+            position: relative;
+        }
+
+        #possibleSteps li::before {
+            content: "\2022"; /* Bullet point character */
+            color: #ffffff; /* Green bullet point color */
+            font-size: 20px; /* Bullet point size */
+            display: inline-block;
+            width: 1em;
+            margin-left: -1.5em;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Predict {{ crop_type }} Crop Class</h1>
+    
+    <div id="predictionResult">
+        <p>Predicted Class: <span id="predictedDisease">{{ prediction }}</span></p>
+        <!-- Optionally, display the probability or other information -->
+        <!-- <p>Probability: <span id="probability"></span></p> -->
+        <p>Description: <span id="description"></span></p>
+        <p>Related Images:</p>
+        <div id="relatedLinks" class="relatedImages"></div>
+        <p>Supplement Name: <span id="supplementName"></span></p>
+        <p>Buy Link: <span id="buyLinkContainer"></span></p>
+        <p>Possible Steps: <span id="possibleSteps"></span></p>
+        <p>Supplement Image: <img id="supplementImage" alt="Supplement Image"></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <script>
+        // Load and parse the CSV file
+        Papa.parse('/get_csv/supplement_info.csv', {
+            download: true,
+            header: true,
+            complete: function (results) {
+                console.log('CSV data:', results.data); // Log the entire CSV data for debugging
+
+                // Access the predicted disease value from the span element
+                const predictedDisease = document.getElementById('predictedDisease').innerText;
+                console.log('Predicted Disease:', predictedDisease); // Log predicted disease for debugging
+
+                // Find the row in the CSV data for the predicted disease
+                const result = results.data.find(row => row['Disease name'] === predictedDisease);
+                console.log('Found result:', result); // Log the found result for debugging
+
+                // Display the predicted disease information
+                document.getElementById('predictedDisease').innerText = predictedDisease;
+
+                // Optionally, display other information
+                if (result) {
+                    document.getElementById('description').innerText = (result['Description'] || 'N/A');
+                    
+                    // Display related image links
+                    const relatedLinks = result['Related image links'];
+                    const relatedLinksContainer = document.getElementById('relatedLinks');
+                    if (relatedLinks) {
+                        const links = relatedLinks.split(',');
+                        links.forEach(link => {
+                            const imgElement = document.createElement('img');
+                            imgElement.src = link.trim();
+                            imgElement.alt = 'Related Image';
+                            imgElement.classList.add('relatedImage');
+                            relatedLinksContainer.appendChild(imgElement);
+                        });
+                    } else {
+                        relatedLinksContainer.innerHTML = 'N/A';
+                    }
+
+                    document.getElementById('supplementName').innerText =  (result['supplement name'] || 'N/A');
+
+                    // Create and display the Buy Link
+                    const buyLinkContainer = document.getElementById('buyLinkContainer');
+                    const buyLink = result['buy link'];
+                    if (buyLink) {
+                        const buyLinkElement = document.createElement('a');
+                        buyLinkElement.href = buyLink.trim();
+                        buyLinkElement.target = '_blank';  // Open link in a new tab
+                        buyLinkElement.innerText = 'Click to Buy';  // Change the link text as needed
+                        buyLinkContainer.appendChild(buyLinkElement);
+                    } else {
+                        buyLinkContainer.innerHTML = 'N/A';
+                    }
+
+                    document.getElementById('possibleSteps').innerText = (result['Possible Steps'] || 'N/A');
+
+                    // Display the supplement image if available
+                    const supplementImage = result['supplement image'];
+                    if (supplementImage) {
+                        const imgElement = document.getElementById('supplementImage');
+                        imgElement.src = supplementImage;
+                        imgElement.style.display = 'block';
+                    } else {
+                        document.getElementById('supplementImage').style.display = 'none';
+                    }
+                } else {
+                    console.log('Disease not found in CSV data');
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
